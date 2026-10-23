@@ -1,0 +1,230 @@
+
+.customer-auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 18px;
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgba(37, 99, 235, 0.16),
+      transparent 42%
+    ),
+    #080f1e;
+}
+
+.auth-brand {
+  align-self: flex-start;
+  margin: 0 0 28px max(0px, calc((100% - 1000px) / 2));
+  color: #f8fafc;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+.auth-brand span {
+  color: #60a5fa;
+}
+
+.customer-auth {
+  width: 100%;
+  max-width: 460px;
+  margin: auto 0;
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px solid #26364f;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #111e34, #0d1729);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+}
+
+.auth-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 24px;
+  border: 1px solid #2a4777;
+  border-radius: 18px;
+  background: rgba(37, 99, 235, 0.16);
+  font-size: 1.9rem;
+}
+
+.auth-eyebrow {
+  margin-bottom: 10px;
+  color: #60a5fa;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.customer-auth h1 {
+  margin: 0 0 12px;
+  color: #f8fafc;
+  font-size: clamp(1.8rem, 6vw, 2.3rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.045em;
+}
+
+.auth-description {
+  margin-bottom: 28px;
+  color: #94a3b8;
+  font-size: 0.92rem;
+  line-height: 1.8;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-form label {
+  margin-top: 8px;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 49px;
+  padding: 13px 14px;
+  border: 1px solid #34445f;
+  border-radius: 10px;
+  outline: none;
+  background: #080f1e;
+  color: #f1f5f9;
+  font-size: 0.92rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form input::placeholder {
+  color: #71819a;
+}
+
+.auth-form input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.13);
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 18px;
+  padding: 13px 18px;
+  border: none;
+  border-radius: 11px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.auth-submit:disabled,
+.auth-switch:disabled,
+.auth-logout:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.auth-message {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #34445f;
+  border-radius: 10px;
+  background: #0b1425;
+  color: #bfdbfe;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0;
+  color: #71819a;
+  font-size: 0.75rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #26364f;
+}
+
+.auth-switch,
+.auth-logout {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.auth-switch {
+  border: 1px solid #34445f;
+  background: #16243c;
+  color: #bfdbfe;
+}
+
+.auth-switch:hover:not(:disabled) {
+  border-color: #60a5fa;
+  background: #1a2d4b;
+}
+
+.auth-logout {
+  margin-top: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+}
+
+.auth-logout:hover:not(:disabled) {
+  border-color: #34445f;
+  color: #f1f5f9;
+}
+
+.auth-home-link {
+  display: block;
+  margin-top: 24px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.auth-home-link:hover {
+  color: #93c5fd;
+}
+
+.auth-footer {
+  margin: 28px 0 0;
+  color: #71819a;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .customer-auth-page {
+    padding: 20px 14px;
+  }
+
+  .auth-brand {
+    margin-bottom: 22px;
+  }
+
+  .customer-auth {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+}
