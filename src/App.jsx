@@ -5,7 +5,7 @@ import './App.css'
 import Admin from './Admin.jsx'
 import CustomerAuth from './CustomerAuth.jsx'
 import CustomerBookings from './CustomerBookings.jsx'
-import Navbar from './components/Navbar.jsx'
+import Navbar from './components/navbar.jsx'
 
 function App() {
   const [loading, setLoading] = useState(false)
