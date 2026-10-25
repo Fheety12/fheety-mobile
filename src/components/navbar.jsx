@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import './Navbar.css'
+import './navbar.css'
 
 export default function Navbar() {
   const [session, setSession] = useState(null)
