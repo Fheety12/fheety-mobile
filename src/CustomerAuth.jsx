@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import './CustomerAuth.css'
@@ -24,10 +23,13 @@ export default function CustomerAuth() {
 
         if (error) throw error
 
+        if (data.session) {
+          window.location.href = '/#book'
+          return
+        }
+
         setMessage(
-          data.session
-            ? 'Account created successfully. You are signed in!'
-            : 'Account created. Check your email to confirm your account, then log in.'
+          'Account created. Check your email to confirm your account, then log in.'
         )
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -37,7 +39,8 @@ export default function CustomerAuth() {
 
         if (error) throw error
 
-        setMessage('Login successful! You can now make bookings.')
+        window.location.href = '/#book'
+        return
       }
     } catch (error) {
       setMessage(error.message || 'Authentication failed. Please try again.')
@@ -52,6 +55,7 @@ export default function CustomerAuth() {
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+
       setMessage('You have signed out.')
     } catch (error) {
       setMessage(error.message || 'Sign out failed. Please try again.')
