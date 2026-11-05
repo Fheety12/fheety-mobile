@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import './navbar.css'
@@ -5,6 +6,7 @@ import './navbar.css'
 export default function Navbar() {
   const [session, setSession] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -27,6 +29,36 @@ export default function Navbar() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setUnreadCount(0)
+      return
+    }
+
+    let mounted = true
+
+    async function loadUnreadCount() {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('is_read', false)
+
+      if (!error && mounted) {
+        setUnreadCount(count || 0)
+      }
+    }
+
+    loadUnreadCount()
+
+    const interval = setInterval(loadUnreadCount, 15000)
+
+    return () => {
+      mounted = false
+      clearInterval(interval)
+    }
+  }, [session])
+
   function closeMenu() {
     setMenuOpen(false)
   }
@@ -40,6 +72,7 @@ export default function Navbar() {
     }
 
     setSession(null)
+    setUnreadCount(0)
     closeMenu()
     window.location.href = '/'
   }
@@ -63,15 +96,38 @@ export default function Navbar() {
 
       <nav className={`site-nav-links ${menuOpen ? 'is-open' : ''}`}>
         <a href="/#home" onClick={closeMenu}>Home</a>
+
         <a href="/#book" onClick={closeMenu}>Book a Ride</a>
-        <a href="/#how-it-works" onClick={closeMenu}>How It Works</a>
+
+        <a href="/hire-a-car" onClick={closeMenu}>
+          Hire a Car
+        </a>
+
+        <a href="/#how-it-works" onClick={closeMenu}>
+          How It Works
+        </a>
+
         <a href="/#contact" onClick={closeMenu}>Contact</a>
+
+        <a href="/driver" onClick={closeMenu}>
+          Driver Login
+        </a>
 
         {session ? (
           <>
-            <a href="/my-bookings" onClick={closeMenu}>
+            <a
+              href="/my-bookings"
+              className="nav-bookings-link"
+              onClick={closeMenu}
+            >
               My Bookings
+              {unreadCount > 0 && (
+                <span className="notification-badge">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </a>
+
             <button
               className="nav-account-btn"
               type="button"
@@ -81,7 +137,11 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          <a className="nav-account-btn" href="/account" onClick={closeMenu}>
+          <a
+            className="nav-account-btn"
+            href="/account"
+            onClick={closeMenu}
+          >
             Login / Sign Up
           </a>
         )}

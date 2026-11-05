@@ -569,3 +569,236 @@
   margin: 8px 0 0;
   line-height: 1.5;
 }
+
+
+/* DRIVER MANAGEMENT */
+
+.admin-drivers-panel {
+  margin-top: 30px;
+}
+
+.admin-driver-summary {
+  display: flex;
+  gap: 16px;
+  margin: 22px 0;
+  flex-wrap: wrap;
+}
+
+.admin-driver-summary div {
+  background: #0b1325;
+  border: 1px solid #26344d;
+  border-radius: 12px;
+  padding: 16px 22px;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-driver-summary strong {
+  font-size: 25px;
+  color: #60a5fa;
+}
+
+.admin-driver-summary span {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.admin-driver-form {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid #26344d;
+  border-radius: 14px;
+  background: #0b1325;
+}
+
+.admin-driver-form h3,
+.admin-driver-list h3 {
+  margin: 0 0 18px;
+  color: #fff;
+}
+
+.admin-driver-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-driver-form-grid .admin-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-driver-submit {
+  margin-top: 20px;
+}
+
+.admin-driver-list {
+  margin-top: 28px;
+}
+
+.admin-driver-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  margin-top: 12px;
+  border: 1px solid #26344d;
+  border-radius: 12px;
+  background: #0b1325;
+}
+
+.admin-driver-card h4 {
+  color: #fff;
+  margin: 0 0 7px;
+}
+
+.admin-driver-card p {
+  color: #cbd5e1;
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.admin-driver-active,
+.admin-driver-inactive {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+.admin-driver-active {
+  color: #34d399;
+  background: #064e3b;
+}
+
+.admin-driver-inactive {
+  color: #fb7185;
+  background: #4c0519;
+}
+
+@media (max-width: 650px) {
+  .admin-driver-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-driver-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* CAR HIRE ADMIN STYLING */
+
+.admin-car-hire-panel {
+  background: #101b30;
+  color: #f1f5f9;
+  font-family: inherit;
+  border: 1px solid #26364f;
+}
+
+.admin-car-hire-panel * {
+  box-sizing: border-box;
+}
+
+.admin-car-hire-panel h2,
+.admin-car-hire-panel h3,
+.admin-car-hire-panel p,
+.admin-car-hire-panel strong,
+.admin-car-hire-panel label {
+  font-family: inherit;
+}
+
+.admin-car-hire-panel .admin-customer-section {
+  background: #0b1325;
+  color: #f1f5f9;
+  margin-top: 18px;
+  line-height: 1.6;
+}
+
+.admin-car-hire-panel .admin-customer-section p {
+  color: #cbd5e1;
+}
+
+.admin-car-hire-panel .admin-section-label {
+  color: #60a5fa;
+}
+
+.admin-car-hire-panel .admin-status-badge {
+  background: #16243c;
+  color: #60a5fa;
+  border: 1px solid #26364f;
+}
+
+.admin-car-hire-panel .admin-date-value {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.admin-car-hire-panel .admin-input,
+.admin-car-hire-panel .admin-select {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.admin-car-hire-panel .admin-refresh {
+  margin-top: 10px;
+}
+
+.admin-car-hire-panel .booking-note {
+  background: #332817;
+  color: #fcd34d;
+  border: 1px solid #78551b;
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 18px;
+  line-height: 1.6;
+}
+
+.admin-car-hire-panel .booking-note p {
+  color: #f1d79a;
+  margin-bottom: 0;
+}
+
+.admin-car-hire-panel .admin-status-control {
+  margin-top: 22px;
+}
+
+/* ADMIN DASHBOARD SECTION VISIBILITY FIX */
+
+.admin-page,
+.admin-container {
+  height: auto !important;
+  min-height: 100vh;
+  overflow: visible !important;
+}
+
+.admin-drivers-panel,
+.admin-bookings-panel,
+.admin-car-hire-panel {
+  display: block !important;
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin-bottom: 30px !important;
+}
+
+.admin-bookings-panel {
+  clear: both;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-booking-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: 18px;
+}

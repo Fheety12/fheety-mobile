@@ -6,6 +6,8 @@ import Admin from './Admin.jsx'
 import CustomerAuth from './CustomerAuth.jsx'
 import CustomerBookings from './CustomerBookings.jsx'
 import Navbar from './components/navbar.jsx'
+import Driver from './Driver.jsx'
+import CarHire from './CarHire.jsx'
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -25,6 +27,12 @@ function App() {
   if (pathname === '/my-bookings') {
     return <CustomerBookings />
   }
+  if (pathname === '/driver') {
+  return <Driver />
+}
+if (pathname === '/hire-a-car') {
+  return <CarHire />
+}
 
   async function handleBooking(event) {
     event.preventDefault()
@@ -303,6 +311,9 @@ function App() {
         <a className="logo" href="#home">
           Fheety<span>Mobile</span>
         </a>
+        <p>
+  <a href="/driver">Driver Login</a>
+</p>
 
         <p>Making every journey easier to plan.</p>
 

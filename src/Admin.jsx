@@ -1,23 +1,20 @@
-
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
+import CarHireAdmin from './CarHireAdmin.jsx'
+import VehicleAdmin from './VehicleAdmin.jsx'
 import './Admin.css'
 
-// Generate a short reference for each booking.
 function getBookingReference(booking) {
   if (!booking.id) return 'Reference unavailable'
   return `FH-${String(booking.id).slice(0, 8).toUpperCase()}`
 }
 
-// Format the date and time the booking was submitted.
 function formatSubmittedDate(date) {
   if (!date) return 'Date unavailable'
 
   const parsedDate = new Date(date)
 
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Date unavailable'
-  }
+  if (Number.isNaN(parsedDate.getTime())) return 'Date unavailable'
 
   return parsedDate.toLocaleString('en-NG', {
     dateStyle: 'medium',
@@ -25,7 +22,6 @@ function formatSubmittedDate(date) {
   })
 }
 
-// Set the colour for each booking status.
 function statusColor(status) {
   const colors = {
     pending: '#fbbf24',
@@ -51,6 +47,66 @@ export default function Admin() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+
+  const [drivers, setDrivers] = useState([])
+  const [driversLoading, setDriversLoading] = useState(false)
+  const [driversError, setDriversError] = useState('')
+  const [driverMessage, setDriverMessage] = useState('')
+  const [addingDriver, setAddingDriver] = useState(false)
+  const [updatingDriverId, setUpdatingDriverId] = useState(null)
+  const [assigningBookingId, setAssigningBookingId] = useState(null)
+
+  const [driverForm, setDriverForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    password: '',
+  })
+
+  async function loadBookings() {
+    setBookingsLoading(true)
+    setBookingsError('')
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      setBookingsError(error.message)
+      setBookings([])
+    } else {
+      setBookings(data || [])
+    }
+
+    setBookingsLoading(false)
+  }
+
+  async function loadDrivers() {
+    setDriversLoading(true)
+    setDriversError('')
+
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('id, user_id, full_name, phone, is_active, created_at')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      setDriversError(error.message)
+      setDrivers([])
+    } else {
+      setDrivers(data || [])
+    }
+
+    setDriversLoading(false)
+  }
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadBookings()
+      loadDrivers()
+    }
+  }, [isLoggedIn])
 
   async function handleLogin(event) {
     event.preventDefault()
@@ -92,31 +148,115 @@ export default function Admin() {
     setLoading(false)
   }
 
-  async function loadBookings() {
-    setBookingsLoading(true)
+  async function handleAddDriver(event) {
+    event.preventDefault()
+    setAddingDriver(true)
+    setDriverMessage('')
+    setDriversError('')
+
+    const { data, error } = await supabase.functions.invoke(
+      'create-driver',
+      {
+        body: {
+          full_name: driverForm.full_name.trim(),
+          email: driverForm.email.trim(),
+          phone: driverForm.phone.trim(),
+          password: driverForm.password,
+        },
+      }
+    )
+
+    if (error || data?.error) {
+      setDriversError(
+        data?.error || error?.message || 'Could not register driver.'
+      )
+      setAddingDriver(false)
+      return
+    }
+
+    setDriverMessage('Driver account created successfully!')
+
+    setDriverForm({
+      full_name: '',
+      email: '',
+      phone: '',
+      password: '',
+    })
+
+    await loadDrivers()
+    setAddingDriver(false)
+  }
+
+  async function toggleDriverStatus(driver) {
+    const newStatus = !driver.is_active
+
+    setUpdatingDriverId(driver.id)
+    setDriversError('')
+    setDriverMessage('')
+
+    const { error } = await supabase
+      .from('drivers')
+      .update({ is_active: newStatus })
+      .eq('id', driver.id)
+
+    if (error) {
+      setDriversError(error.message)
+    } else {
+      setDrivers((current) =>
+        current.map((item) =>
+          item.id === driver.id
+            ? { ...item, is_active: newStatus }
+            : item
+        )
+      )
+
+      setDriverMessage(
+        `${driver.full_name} has been ${newStatus ? 'activated' : 'deactivated'}.`
+      )
+    }
+
+    setUpdatingDriverId(null)
+  }
+
+  async function assignDriver(booking, driverId) {
+    setAssigningBookingId(booking.id)
     setBookingsError('')
     setMessage('')
 
     const { data, error } = await supabase
       .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .update({ driver_id: driverId || null })
+      .eq('id', booking.id)
+      .select('id, driver_id')
 
     if (error) {
-      setBookingsError(error.message)
-      setBookings([])
+      setBookingsError('Could not assign driver: ' + error.message)
+    } else if (!data || data.length === 0) {
+      setBookingsError(
+        'No booking was updated. Check the booking permissions.'
+      )
     } else {
-      setBookings(data || [])
+      setBookings((current) =>
+        current.map((item) =>
+          item.id === booking.id
+            ? { ...item, driver_id: driverId || null }
+            : item
+        )
+      )
+
+      setMessage(
+        driverId
+          ? 'Driver assigned successfully.'
+          : 'Driver assignment removed.'
+      )
     }
 
-    setBookingsLoading(false)
+    setAssigningBookingId(null)
   }
 
   async function updateBookingStatus(booking, newStatus) {
     if (!booking.id) {
-      setBookingsError(
-        'This booking has no ID, so it cannot be updated.'
-      )
+      setBookingsError('This booking has no ID, so it cannot be updated.')
       return
     }
 
@@ -133,9 +273,7 @@ export default function Admin() {
       .select()
 
     if (error) {
-      setBookingsError(
-        'Could not update booking: ' + error.message
-      )
+      setBookingsError('Could not update booking: ' + error.message)
     } else if (!data || data.length === 0) {
       setBookingsError(
         'No booking was updated. Check the Supabase UPDATE and SELECT policies.'
@@ -165,8 +303,11 @@ export default function Admin() {
 
     setIsLoggedIn(false)
     setBookings([])
+    setDrivers([])
     setMessage('')
     setBookingsError('')
+    setDriversError('')
+    setDriverMessage('')
     setEmail('')
     setPassword('')
     setSearchTerm('')
@@ -176,19 +317,18 @@ export default function Admin() {
   const totalBookings = bookings.length
 
   const pendingBookings = bookings.filter(
-    (booking) =>
-      (booking.status || 'pending').toLowerCase() === 'pending'
+    (booking) => (booking.status || 'pending').toLowerCase() === 'pending'
   ).length
 
   const confirmedBookings = bookings.filter(
-    (booking) =>
-      (booking.status || '').toLowerCase() === 'confirmed'
+    (booking) => (booking.status || '').toLowerCase() === 'confirmed'
   ).length
 
   const completedBookings = bookings.filter(
-    (booking) =>
-      (booking.status || '').toLowerCase() === 'completed'
+    (booking) => (booking.status || '').toLowerCase() === 'completed'
   ).length
+
+  const activeDrivers = drivers.filter((driver) => driver.is_active)
 
   const filteredBookings = bookings.filter((booking) => {
     const search = searchTerm.trim().toLowerCase()
@@ -207,13 +347,11 @@ export default function Admin() {
     return matchesSearch && matchesStatus
   })
 
-  // Admin login screen.
   if (!isLoggedIn) {
     return (
       <main className="admin-login-page">
         <form className="admin-login-card" onSubmit={handleLogin}>
           <div className="admin-logo">F</div>
-
           <p className="admin-brand">FHEETYMOBILE</p>
           <h1>Admin sign in</h1>
 
@@ -225,7 +363,6 @@ export default function Admin() {
             <label className="admin-label" htmlFor="admin-email">
               Email address
             </label>
-
             <input
               className="admin-input"
               id="admin-email"
@@ -242,7 +379,6 @@ export default function Admin() {
             <label className="admin-label" htmlFor="admin-password">
               Password
             </label>
-
             <input
               className="admin-input"
               id="admin-password"
@@ -264,11 +400,7 @@ export default function Admin() {
           </button>
 
           {message && (
-            <p
-              className="admin-error"
-              role="alert"
-              style={{ marginTop: 18 }}
-            >
+            <p className="admin-error" role="alert" style={{ marginTop: 18 }}>
               {message}
             </p>
           )}
@@ -278,52 +410,25 @@ export default function Admin() {
   }
 
   const stats = [
-    {
-      title: 'Total bookings',
-      count: totalBookings,
-      symbol: '▦',
-      color: '#60a5fa',
-    },
-    {
-      title: 'Pending',
-      count: pendingBookings,
-      symbol: '◷',
-      color: '#fbbf24',
-    },
-    {
-      title: 'Confirmed',
-      count: confirmedBookings,
-      symbol: '✓',
-      color: '#34d399',
-    },
-    {
-      title: 'Completed',
-      count: completedBookings,
-      symbol: '★',
-      color: '#c4b5fd',
-    },
+    { title: 'Total bookings', count: totalBookings, symbol: '▦', color: '#60a5fa' },
+    { title: 'Pending', count: pendingBookings, symbol: '◷', color: '#fbbf24' },
+    { title: 'Confirmed', count: confirmedBookings, symbol: '✓', color: '#34d399' },
+    { title: 'Completed', count: completedBookings, symbol: '★', color: '#c4b5fd' },
   ]
 
-  // Admin dashboard.
   return (
     <main className="admin-page">
       <div className="admin-container">
         <header className="admin-header">
           <div className="admin-header-brand">
             <div className="admin-header-logo">F</div>
-
             <div>
               <h2 className="admin-header-title">Fheety Mobile</h2>
-              <p className="admin-header-subtitle">
-                ADMINISTRATION PORTAL
-              </p>
+              <p className="admin-header-subtitle">ADMINISTRATION PORTAL</p>
             </div>
           </div>
 
-          <button
-            className="admin-signout"
-            onClick={handleSignOut}
-          >
+          <button className="admin-signout" onClick={handleSignOut}>
             ↪ Sign out
           </button>
         </header>
@@ -331,47 +436,207 @@ export default function Admin() {
         <section className="admin-overview">
           <p className="admin-eyebrow">OVERVIEW</p>
           <h1>Admin dashboard</h1>
-
-          <p>
-            Welcome back. Here&apos;s what&apos;s happening with your ride
-            bookings.
-          </p>
+          <p>Welcome back. Here's what's happening with your ride bookings.</p>
         </section>
 
         <section className="admin-stats">
           {stats.map((stat) => (
             <article className="admin-stat" key={stat.title}>
               <div className="admin-stat-top">
-                <span className="admin-stat-title">
-                  {stat.title}
-                </span>
-
-                <span
-                  className="admin-stat-icon"
-                  style={{ color: stat.color }}
-                >
+                <span className="admin-stat-title">{stat.title}</span>
+                <span className="admin-stat-icon" style={{ color: stat.color }}>
                   {stat.symbol}
                 </span>
               </div>
-
-              <h2 className="admin-stat-number">
-                {stat.count}
-              </h2>
-
-              <p className="admin-stat-description">
-                Current loaded bookings
-              </p>
+              <h2 className="admin-stat-number">{stat.count}</h2>
+              <p className="admin-stat-description">Current loaded bookings</p>
             </article>
           ))}
         </section>
 
+        {/* DRIVER MANAGEMENT */}
+        <section className="admin-bookings-panel admin-drivers-panel">
+          <div className="admin-bookings-header">
+            <div>
+              <h2>Driver Management</h2>
+              <p>Register drivers and manage their availability.</p>
+            </div>
+
+            <button
+              className="admin-refresh"
+              onClick={loadDrivers}
+              disabled={driversLoading}
+            >
+              {driversLoading ? 'Loading...' : '↻ Refresh drivers'}
+            </button>
+          </div>
+
+          <div className="admin-driver-summary">
+            <div>
+              <strong>{drivers.length}</strong>
+              <span>Total drivers</span>
+            </div>
+            <div>
+              <strong>{activeDrivers.length}</strong>
+              <span>Active drivers</span>
+            </div>
+          </div>
+
+          <form className="admin-driver-form" onSubmit={handleAddDriver}>
+            <h3>Register a new driver</h3>
+
+            <div className="admin-driver-form-grid">
+              <div>
+                <label className="admin-label" htmlFor="driver-name">
+                  Full name
+                </label>
+                <input
+                  className="admin-input"
+                  id="driver-name"
+                  value={driverForm.full_name}
+                  onChange={(event) =>
+                    setDriverForm({
+                      ...driverForm,
+                      full_name: event.target.value,
+                    })
+                  }
+                  placeholder="Driver's full name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="admin-label" htmlFor="driver-email">
+                  Email address
+                </label>
+                <input
+                  className="admin-input"
+                  id="driver-email"
+                  type="email"
+                  value={driverForm.email}
+                  onChange={(event) =>
+                    setDriverForm({
+                      ...driverForm,
+                      email: event.target.value,
+                    })
+                  }
+                  placeholder="driver@example.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="admin-label" htmlFor="driver-phone">
+                  Phone number
+                </label>
+                <input
+                  className="admin-input"
+                  id="driver-phone"
+                  type="tel"
+                  value={driverForm.phone}
+                  onChange={(event) =>
+                    setDriverForm({
+                      ...driverForm,
+                      phone: event.target.value,
+                    })
+                  }
+                  placeholder="Driver's phone number"
+                />
+              </div>
+
+              <div>
+                <label className="admin-label" htmlFor="driver-password">
+                  Temporary password
+                </label>
+                <input
+                  className="admin-input"
+                  id="driver-password"
+                  type="password"
+                  minLength="8"
+                  value={driverForm.password}
+                  onChange={(event) =>
+                    setDriverForm({
+                      ...driverForm,
+                      password: event.target.value,
+                    })
+                  }
+                  placeholder="At least 8 characters"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              className="admin-login-button admin-driver-submit"
+              type="submit"
+              disabled={addingDriver}
+            >
+              {addingDriver ? 'Creating driver account...' : '+ Add driver'}
+            </button>
+          </form>
+
+          {driverMessage && (
+            <p className="admin-success" role="status">{driverMessage}</p>
+          )}
+
+          {driversError && (
+            <p className="admin-error" role="alert">{driversError}</p>
+          )}
+
+          {driversLoading && (
+            <p className="admin-loading">Loading drivers...</p>
+          )}
+
+          {!driversLoading && drivers.length === 0 && !driversError && (
+            <div className="admin-empty">
+              <h3>No drivers registered yet</h3>
+              <p>Use the form above to register your first driver.</p>
+            </div>
+          )}
+
+          {drivers.length > 0 && (
+            <div className="admin-driver-list">
+              <h3>Registered drivers</h3>
+
+              {drivers.map((driver) => (
+                <article className="admin-driver-card" key={driver.id}>
+                  <div>
+                    <h4>{driver.full_name}</h4>
+                    <p>{driver.phone || 'No phone number provided'}</p>
+                    <span
+                      className={
+                        driver.is_active
+                          ? 'admin-driver-active'
+                          : 'admin-driver-inactive'
+                      }
+                    >
+                      {driver.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  <button
+                    className="admin-refresh"
+                    onClick={() => toggleDriverStatus(driver)}
+                    disabled={updatingDriverId === driver.id}
+                  >
+                    {updatingDriverId === driver.id
+                      ? 'Updating...'
+                      : driver.is_active
+                        ? 'Deactivate'
+                        : 'Activate'}
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* RIDE BOOKINGS */}
         <section className="admin-bookings-panel">
           <div className="admin-bookings-header">
             <div>
               <h2>Ride bookings</h2>
-              <p>
-                Review customer requests and manage booking statuses.
-              </p>
+              <p>Review customer requests and manage booking statuses.</p>
             </div>
 
             <button
@@ -379,9 +644,7 @@ export default function Admin() {
               onClick={loadBookings}
               disabled={bookingsLoading}
             >
-              {bookingsLoading
-                ? 'Loading...'
-                : '↻ Refresh bookings'}
+              {bookingsLoading ? 'Loading...' : '↻ Refresh bookings'}
             </button>
           </div>
 
@@ -408,187 +671,208 @@ export default function Admin() {
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
-        </section>
 
-        {message && (
-          <p className="admin-success" role="status">
-            {message}
-          </p>
-        )}
+          {message && (
+            <p className="admin-success" role="status">{message}</p>
+          )}
 
-        {bookingsError && (
-          <p className="admin-error" role="alert">
-            {bookingsError}
-          </p>
-        )}
+          {bookingsError && (
+            <p className="admin-error" role="alert">{bookingsError}</p>
+          )}
 
-        {bookingsLoading && (
-          <p className="admin-loading">
-            Loading bookings from Supabase...
-          </p>
-        )}
+          {bookingsLoading && (
+            <p className="admin-loading">Loading bookings from Supabase...</p>
+          )}
 
-        {!bookingsLoading && filteredBookings.length === 0 && (
-          <section className="admin-empty">
-            <div className="admin-empty-icon">▦</div>
+          {!bookingsLoading && filteredBookings.length === 0 && (
+            <div className="admin-empty">
+              <div className="admin-empty-icon">▦</div>
+              <h3>
+                {bookings.length === 0
+                  ? 'No bookings loaded yet'
+                  : 'No matching bookings'}
+              </h3>
+              <p>
+                {bookings.length === 0
+                  ? 'Click Refresh bookings to load requests from your database.'
+                  : 'Try another search term or status filter.'}
+              </p>
+            </div>
+          )}
 
-            <h3>
-              {bookings.length === 0
-                ? 'No bookings loaded yet'
-                : 'No matching bookings'}
-            </h3>
+          <div className="admin-booking-grid">
+            {filteredBookings.map((booking, index) => {
+              const assignedDriver = drivers.find(
+                (driver) => driver.id === booking.driver_id
+              )
 
-            <p>
-              {bookings.length === 0
-                ? 'Click Refresh bookings to load requests from your database.'
-                : 'Try another search term or status filter.'}
-            </p>
-          </section>
-        )}
+              return (
+                <article className="admin-booking-card" key={booking.id ?? index}>
+                  <div className="admin-booking-header">
+                    <div>
+                      <p className="admin-booking-label">BOOKING REQUEST</p>
+                      <h3 className="admin-booking-title">
+                        {getBookingReference(booking)}
+                      </h3>
+                      <p className="admin-submitted-date">
+                        Submitted: {formatSubmittedDate(booking.created_at)}
+                      </p>
+                    </div>
 
-        <section className="admin-booking-grid">
-          {filteredBookings.map((booking, index) => (
-            <article
-              className="admin-booking-card"
-              key={booking.id ?? index}
-            >
-              <div className="admin-booking-header">
-                <div>
-                  <p className="admin-booking-label">
-                    BOOKING REQUEST
-                  </p>
-
-                  <h3 className="admin-booking-title">
-                    {getBookingReference(booking)}
-                  </h3>
-
-                  <p className="admin-submitted-date">
-                    Submitted: {formatSubmittedDate(booking.created_at)}
-                  </p>
-                </div>
-
-                <span
-                  className="admin-status-badge"
-                  style={{
-                    color: statusColor(booking.status),
-                    background: '#0b1325',
-                    border: `1px solid ${statusColor(booking.status)}55`,
-                  }}
-                >
-                  {booking.status || 'pending'}
-                </span>
-              </div>
-
-              <div style={{ marginTop: 18 }}>
-                <p className="admin-section-label">
-                  CUSTOMER INFORMATION
-                </p>
-
-                <div className="admin-customer-section">
-                  <p>
-                    <strong>Name:</strong>{' '}
-                    {booking.customer_name || 'Not provided'}
-                  </p>
-
-                  <p>
-                    <strong>Email:</strong>{' '}
-                    {booking.customer_email || 'Not provided'}
-                  </p>
-
-                  <p>
-                    <strong>Phone:</strong>{' '}
-                    {booking.customer_phone || 'Not provided'}
-                  </p>
-
-                  <p>
-                    <strong>Account:</strong>{' '}
-                    {booking.user_id
-                      ? 'Registered customer'
-                      : 'Guest booking'}
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 20 }}>
-                <p className="admin-section-label">
-                  JOURNEY DETAILS
-                </p>
-
-                <div className="admin-journey">
-                  <div className="admin-route-line">
-                    <span className="pickup-dot">●</span>
-                    <div className="line" />
-                    <span className="destination-dot">●</span>
+                    <span
+                      className="admin-status-badge"
+                      style={{
+                        color: statusColor(booking.status),
+                        background: '#0b1325',
+                        border: `1px solid ${statusColor(booking.status)}55`,
+                      }}
+                    >
+                      {booking.status || 'pending'}
+                    </span>
                   </div>
 
-                  <div className="admin-journey-content">
-                    <p className="admin-location-label">
-                      PICKUP LOCATION
-                    </p>
+                  <div style={{ marginTop: 18 }}>
+                    <p className="admin-section-label">CUSTOMER INFORMATION</p>
+                    <div className="admin-customer-section">
+                      <p><strong>Name:</strong> {booking.customer_name || 'Not provided'}</p>
+                      <p><strong>Email:</strong> {booking.customer_email || 'Not provided'}</p>
+                      <p><strong>Phone:</strong> {booking.customer_phone || 'Not provided'}</p>
+                      <p>
+                        <strong>Account:</strong>{' '}
+                        {booking.user_id ? 'Registered customer' : 'Guest booking'}
+                      </p>
+                    </div>
+                  </div>
 
-                    <p className="admin-location">
-                      {booking.pickup_location || 'Not provided'}
-                    </p>
+                  <div style={{ marginTop: 20 }}>
+                    <p className="admin-section-label">JOURNEY DETAILS</p>
 
-                    <p className="admin-location-label">
-                      DESTINATION
-                    </p>
+                    <div className="admin-journey">
+                      <div className="admin-route-line">
+                        <span className="pickup-dot">●</span>
+                        <div className="line" />
+                        <span className="destination-dot">●</span>
+                      </div>
 
-                    <p className="admin-location">
-                      {booking.destination || 'Not provided'}
+                      <div className="admin-journey-content">
+                        <p className="admin-location-label">PICKUP LOCATION</p>
+                        <p className="admin-location">
+                          {booking.pickup_location || 'Not provided'}
+                        </p>
+
+                        <p className="admin-location-label">DESTINATION</p>
+                        <p className="admin-location">
+                          {booking.destination || 'Not provided'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="admin-date-section">
+                    <div>
+                      <p className="admin-section-label">TRAVEL DATE</p>
+                      <p className="admin-date-value">
+                        {booking.travel_date || 'Not provided'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="admin-section-label">PICKUP TIME</p>
+                      <p className="admin-date-value">
+                        {booking.pickup_time || 'Not provided'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="admin-status-control">
+                    <label
+                      className="admin-label"
+                      htmlFor={`driver-${booking.id}`}
+                    >
+                      Assign driver
+                    </label>
+
+                    <select
+                      className="admin-select"
+                      id={`driver-${booking.id}`}
+                      value={booking.driver_id || ''}
+                      disabled={
+                        assigningBookingId === booking.id ||
+                        ['cancelled', 'completed'].includes(
+                          (booking.status || '').toLowerCase()
+                        )
+                      }
+                      onChange={(event) =>
+                        assignDriver(booking, event.target.value)
+                      }
+                    >
+                      <option value="">Unassigned</option>
+
+                      {activeDrivers.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.full_name}
+                        </option>
+                      ))}
+
+                      {assignedDriver && !assignedDriver.is_active && (
+                        <option value={assignedDriver.id}>
+                          {assignedDriver.full_name} (Inactive)
+                        </option>
+                      )}
+                    </select>
+
+                    {assigningBookingId === booking.id && (
+                      <p className="admin-status-saving">
+                        Saving driver assignment...
+                      </p>
+                    )}
+
+                    <p className="admin-date-value">
+                      Currently assigned:{' '}
+                      {assignedDriver
+                        ? assignedDriver.full_name
+                        : 'No driver assigned'}
                     </p>
                   </div>
-                </div>
-              </div>
 
-              <div className="admin-date-section">
-                <div>
-                  <p className="admin-section-label">TRAVEL DATE</p>
-                  <p className="admin-date-value">
-                    {booking.travel_date || 'Not provided'}
-                  </p>
-                </div>
+                  <div className="admin-status-control">
+                    <label
+                      className="admin-label"
+                      htmlFor={`status-${booking.id}`}
+                    >
+                      Update booking status
+                    </label>
 
-                <div>
-                  <p className="admin-section-label">PICKUP TIME</p>
-                  <p className="admin-date-value">
-                    {booking.pickup_time || 'Not provided'}
-                  </p>
-                </div>
-              </div>
+                    <select
+                      className="admin-select"
+                      id={`status-${booking.id}`}
+                      value={(booking.status || 'pending').toLowerCase()}
+                      disabled={updatingId === booking.id}
+                      onChange={(event) =>
+                        updateBookingStatus(booking, event.target.value)
+                      }
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
 
-              <div className="admin-status-control">
-                <label
-                  className="admin-label"
-                  htmlFor={`status-${booking.id}`}
-                >
-                  Update booking status
-                </label>
-
-                <select
-                  className="admin-select"
-                  id={`status-${booking.id}`}
-                  value={(booking.status || 'pending').toLowerCase()}
-                  disabled={updatingId === booking.id}
-                  onChange={(event) =>
-                    updateBookingStatus(booking, event.target.value)
-                  }
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-
-                {updatingId === booking.id && (
-                  <p className="admin-status-saving">
-                    Saving status...
-                  </p>
-                )}
-              </div>
-            </article>
-          ))}
+                    {updatingId === booking.id && (
+                      <p className="admin-status-saving">Saving status...</p>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
+          </div>
         </section>
+
+        {/* VEHICLE MANAGEMENT */}
+<VehicleAdmin />
+
+{/* CAR HIRE MANAGEMENT */}
+<CarHireAdmin />
 
         <footer className="admin-footer">
           Fheety Mobile · Admin Dashboard
