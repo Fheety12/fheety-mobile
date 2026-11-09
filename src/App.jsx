@@ -9,30 +9,37 @@ import Navbar from './components/navbar.jsx'
 import Driver from './Driver.jsx'
 import CarHire from './CarHire.jsx'
 
+// MetroMovers actual vehicle photographs
+const vehicles = [
+  {
+    name: 'SUV',
+    category: 'SUV',
+    description:
+      'Toyota Prado SUV for executive travel, family journeys and airport transfers.',
+    image: '/prado-front.jpg',
+  },
+  {
+    name: 'Saloon',
+    category: 'Saloon',
+    description:
+      'Comfortable saloon car for business trips and personal journeys.',
+    image: '/saloon-car.jpg',
+  },
+]
+
 function App() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [selectedVehicle, setSelectedVehicle] = useState('')
   const [messageType, setMessageType] = useState('')
 
   const pathname = window.location.pathname
 
-  if (pathname === '/admin') {
-    return <Admin />
-  }
-
-  if (pathname === '/account') {
-    return <CustomerAuth />
-  }
-
-  if (pathname === '/my-bookings') {
-    return <CustomerBookings />
-  }
-  if (pathname === '/driver') {
-  return <Driver />
-}
-if (pathname === '/hire-a-car') {
-  return <CarHire />
-}
+  if (pathname === '/admin') return <Admin />
+  if (pathname === '/account') return <CustomerAuth />
+  if (pathname === '/my-bookings') return <CustomerBookings />
+  if (pathname === '/driver') return <Driver />
+  if (pathname === '/hire-a-car') return <CarHire />
 
   async function handleBooking(event) {
     event.preventDefault()
@@ -52,6 +59,7 @@ if (pathname === '/hire-a-car') {
       destination: formData.get('destination'),
       travel_date: formData.get('travel_date'),
       pickup_time: formData.get('pickup_time'),
+      vehicle_type: formData.get('vehicle_type'),
     }
 
     try {
@@ -60,7 +68,6 @@ if (pathname === '/hire-a-car') {
         error: userError,
       } = await supabase.auth.getUser()
 
-      // Allow guests to book without signing in.
       if (
         userError &&
         userError.name !== 'AuthSessionMissingError'
@@ -77,20 +84,21 @@ if (pathname === '/hire-a-car') {
         .from('bookings')
         .insert([bookingWithUser])
 
-      if (error) {
-        throw error
-      }
+      if (error) throw error
 
-      setMessage('Booking request submitted successfully!')
+      setMessage(
+        'Your MetroMovers booking request was submitted successfully!'
+      )
       setMessageType('success')
       form.reset()
+      setSelectedVehicle('')
     } catch (error) {
       console.error('Booking error:', error)
 
       setMessage(
         error?.message
           ? `Booking failed: ${error.message}`
-          : 'Booking could not be saved. Please check your connection and try again.'
+          : 'Booking could not be saved. Please try again.'
       )
       setMessageType('error')
     } finally {
@@ -98,14 +106,23 @@ if (pathname === '/hire-a-car') {
     }
   }
 
+  const today = new Date(
+    Date.now() - new Date().getTimezoneOffset() * 60000
+  )
+    .toISOString()
+    .slice(0, 10)
+
   return (
     <div className="app">
       <Navbar />
 
       <main>
+        {/* HERO */}
         <section className="hero-section" id="home">
           <div className="hero-content">
-            <p className="eyebrow">YOUR JOURNEY, YOUR WAY</p>
+            <p className="eyebrow">
+              YOUR JOURNEY, OUR PRIORITY
+            </p>
 
             <h1>
               Move smarter.
@@ -114,8 +131,9 @@ if (pathname === '/hire-a-car') {
             </h1>
 
             <p className="hero-description">
-              Book your ride ahead of time and travel with confidence.
-              Fheety Mobile makes planning your next journey simple.
+              From airport transfers to everyday journeys and
+              interstate travel, MetroMovers makes every trip
+              comfortable, convenient and easy to arrange.
             </p>
 
             <div className="hero-actions">
@@ -123,25 +141,25 @@ if (pathname === '/hire-a-car') {
                 Book a Ride →
               </a>
 
-              <a className="secondary-btn" href="#how-it-works">
-                How it works
+              <a className="secondary-btn" href="#vehicles">
+                Explore Vehicles
               </a>
             </div>
 
             <div className="hero-stats">
               <div>
-                <strong>Easy</strong>
-                <span>Ride booking</span>
+                <strong>Airport</strong>
+                <span>Transfers</span>
               </div>
 
               <div>
-                <strong>Planned</strong>
+                <strong>Full-Day</strong>
+                <span>Car Hire</span>
+              </div>
+
+              <div>
+                <strong>Interstate</strong>
                 <span>Journeys</span>
-              </div>
-
-              <div>
-                <strong>Simple</strong>
-                <span>Experience</span>
               </div>
             </div>
           </div>
@@ -149,17 +167,109 @@ if (pathname === '/hire-a-car') {
           <div className="hero-visual">
             <img
               className="hero-car-image"
-              src="/fheety-luxury-black-car-hero.png"
-              alt="Luxury black car on a city street at night"
+              src="/prado-front.jpg"
+              alt="MetroMovers Toyota Prado SUV"
             />
           </div>
         </section>
 
+        {/* SERVICES */}
+        <section className="how-section" id="services">
+          <div className="section-heading">
+            <p className="eyebrow">OUR SERVICES</p>
+            <h2>Travel your way with MetroMovers</h2>
+            <p>
+              Transportation solutions designed around your journey.
+            </p>
+          </div>
+
+          <div className="steps-grid">
+            <article className="step-card">
+              <div className="step-number">01</div>
+              <h3>Airport Transfers</h3>
+              <p>
+                Convenient airport pickup and drop-off services
+                for your arrival and departure.
+              </p>
+            </article>
+
+            <article className="step-card">
+              <div className="step-number">02</div>
+              <h3>Full-Day Service</h3>
+              <p>
+                Arrange a vehicle and driver for your personal
+                or business activities throughout the day.
+              </p>
+            </article>
+
+            <article className="step-card">
+              <div className="step-number">03</div>
+              <h3>Interstate Travel</h3>
+              <p>
+                Plan journeys between Lagos and other states
+                across Nigeria.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        {/* VEHICLE GALLERY */}
+        <section className="vehicle-section" id="vehicles">
+          <div className="section-heading">
+            <p className="eyebrow">OUR VEHICLES</p>
+            <h2>Find a vehicle for your journey</h2>
+            <p>
+              Explore our available SUV and Saloon vehicles.
+            </p>
+          </div>
+
+          <div className="vehicle-grid">
+            {vehicles.map((vehicle) => (
+              <article
+                className="vehicle-card"
+                key={vehicle.name}
+              >
+                <div className="vehicle-image-wrapper">
+                  <img
+                    src={vehicle.image}
+                    alt={`MetroMovers ${vehicle.name}`}
+                    className="vehicle-image"
+                    loading="lazy"
+                  />
+                </div>
+
+                <div className="vehicle-card-content">
+                  <span className="vehicle-category">
+                    {vehicle.category}
+                  </span>
+
+                  <h3>{vehicle.name}</h3>
+
+                  <p>{vehicle.description}</p>
+
+                  <a
+                    href="#book"
+                    className="primary-btn vehicle-btn"
+                    onClick={() =>
+                      setSelectedVehicle(vehicle.name)
+                    }
+                  >
+                    Select This Vehicle →
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* BOOKING */}
         <section className="booking-section" id="book">
           <div className="section-heading">
             <p className="eyebrow">PLAN YOUR JOURNEY</p>
-            <h2>Book your next ride</h2>
-            <p>Enter your trip details to get started.</p>
+            <h2>Book with MetroMovers</h2>
+            <p>
+              Enter your details and submit your transportation request.
+            </p>
           </div>
 
           <form className="booking-form" onSubmit={handleBooking}>
@@ -169,6 +279,7 @@ if (pathname === '/hire-a-car') {
                 type="text"
                 name="customer_name"
                 placeholder="Enter your full name"
+                autoComplete="name"
                 required
               />
             </label>
@@ -179,6 +290,7 @@ if (pathname === '/hire-a-car') {
                 type="email"
                 name="customer_email"
                 placeholder="Enter your email address"
+                autoComplete="email"
                 required
               />
             </label>
@@ -189,8 +301,32 @@ if (pathname === '/hire-a-car') {
                 type="tel"
                 name="customer_phone"
                 placeholder="Enter your phone number"
+                autoComplete="tel"
                 required
               />
+            </label>
+
+            <label>
+              Select your vehicle
+              <select
+                name="vehicle_type"
+                value={selectedVehicle}
+                onChange={(event) =>
+                  setSelectedVehicle(event.target.value)
+                }
+                required
+              >
+                <option value="">Choose a vehicle</option>
+
+                {vehicles.map((vehicle) => (
+                  <option
+                    key={vehicle.name}
+                    value={vehicle.name}
+                  >
+                    {vehicle.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label>
@@ -218,14 +354,7 @@ if (pathname === '/hire-a-car') {
               <input
                 type="date"
                 name="travel_date"
-                min={
-                  new Date(
-                    Date.now() -
-                      new Date().getTimezoneOffset() * 60000
-                  )
-                    .toISOString()
-                    .slice(0, 10)
-                }
+                min={today}
                 required
               />
             </label>
@@ -267,58 +396,103 @@ if (pathname === '/hire-a-car') {
 
           <p className="booking-note">
             Your journey details will be submitted as a booking request.
-            Driver confirmation and live vehicle tracking are future features.
+            Our team will follow up to confirm your arrangements.
           </p>
         </section>
 
+        {/* HOW IT WORKS */}
         <section className="how-section" id="how-it-works">
           <div className="section-heading">
             <p className="eyebrow">SIMPLE AND CONVENIENT</p>
-            <h2>How Fheety Mobile works</h2>
-            <p>Three simple steps to plan your journey.</p>
+            <h2>How MetroMovers works</h2>
+            <p>Three simple steps to arrange your journey.</p>
           </div>
 
           <div className="steps-grid">
             <article className="step-card">
               <div className="step-number">01</div>
-              <h3>Enter your trip</h3>
+              <h3>Choose your journey</h3>
               <p>
-                Choose your pickup location, destination, date and time.
+                Enter your pickup location, destination,
+                preferred date and time.
               </p>
             </article>
 
             <article className="step-card">
               <div className="step-number">02</div>
-              <h3>Arrange your ride</h3>
+              <h3>Submit your request</h3>
               <p>
-                Submit your request so your journey can be arranged.
+                Send your booking request to the MetroMovers team
+                for confirmation.
               </p>
             </article>
 
             <article className="step-card">
               <div className="step-number">03</div>
-              <h3>Travel with ease</h3>
+              <h3>Get ready to travel</h3>
               <p>
-                Driver updates and vehicle tracking will be added
-                as we develop the platform.
+                Receive booking updates and arrange your journey
+                with our team.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        {/* CONTACT */}
+        <section className="booking-section" id="contact">
+          <div className="section-heading">
+            <p className="eyebrow">WE ARE HERE TO HELP</p>
+            <h2>Contact MetroMovers</h2>
+            <p>
+              Have a question about a journey or vehicle hire?
+              Our team will be happy to assist.
+            </p>
+          </div>
+
+          <div className="steps-grid">
+            <article className="step-card">
+              <h3>Phone and WhatsApp</h3>
+              <p>
+                Company contact number will be added after confirmation.
+              </p>
+            </article>
+
+            <article className="step-card">
+              <h3>Email</h3>
+              <p>
+                Official MetroMovers email will be added after confirmation.
+              </p>
+            </article>
+
+            <article className="step-card">
+              <h3>Office address</h3>
+              <p>
+                Company address will be added after confirmation.
               </p>
             </article>
           </div>
         </section>
       </main>
 
-      <footer className="footer" id="contact">
+      {/* FOOTER */}
+      <footer className="footer">
         <a className="logo" href="#home">
-          Fheety<span>Mobile</span>
+          Metro<span>Movers</span>
         </a>
-        <p>
-  <a href="/driver">Driver Login</a>
-</p>
-
-        <p>Making every journey easier to plan.</p>
 
         <p>
-          © {new Date().getFullYear()} Fheety Mobile. All rights reserved.
+          <a href="/driver">Driver Login</a>
+        </p>
+
+        <p>
+          <a href="/hire-a-car">Hire a Car</a>
+        </p>
+
+        <p>Reliable journeys. Comfortable travel.</p>
+
+        <p>
+          © {new Date().getFullYear()} MetroMovers.
+          All rights reserved.
         </p>
       </footer>
     </div>

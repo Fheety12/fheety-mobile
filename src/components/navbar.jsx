@@ -80,7 +80,7 @@ export default function Navbar() {
   return (
     <header className="site-navbar">
       <a className="site-logo" href="/" onClick={closeMenu}>
-        Fheety<span>Mobile</span>
+        Metro<span>Movers</span>
         <small>YOUR JOURNEY, SIMPLIFIED</small>
       </a>
 
@@ -96,22 +96,11 @@ export default function Navbar() {
 
       <nav className={`site-nav-links ${menuOpen ? 'is-open' : ''}`}>
         <a href="/#home" onClick={closeMenu}>Home</a>
-
         <a href="/#book" onClick={closeMenu}>Book a Ride</a>
-
-        <a href="/hire-a-car" onClick={closeMenu}>
-          Hire a Car
-        </a>
-
-        <a href="/#how-it-works" onClick={closeMenu}>
-          How It Works
-        </a>
-
+        <a href="/hire-a-car" onClick={closeMenu}>Hire a Car</a>
+        <a href="/#how-it-works" onClick={closeMenu}>How It Works</a>
         <a href="/#contact" onClick={closeMenu}>Contact</a>
-
-        <a href="/driver" onClick={closeMenu}>
-          Driver Login
-        </a>
+        <a href="/driver" onClick={closeMenu}>Driver Login</a>
 
         {session ? (
           <>

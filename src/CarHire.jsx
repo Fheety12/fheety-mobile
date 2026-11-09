@@ -3,12 +3,40 @@ import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import Navbar from './components/navbar.jsx'
 
+const nigerianStates = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi',
+  'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta',
+  'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo',
+  'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi',
+  'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger',
+  'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
+  'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+  'Federal Capital Territory (Abuja)',
+]
+
+// Actual MetroMovers SUV photographs
+const suvPhotos = [
+  { src: '/prado-front.jpg', alt: 'Toyota Prado front view' },
+  { src: '/prado-second.jpg', alt: 'Toyota Prado second view' },
+  { src: '/prado-third.jpg', alt: 'Toyota Prado third view' },
+  { src: '/prado-four.jpg', alt: 'Toyota Prado fourth view' },
+  { src: '/prado-fifth.jpg', alt: 'Toyota Prado fifth view' },
+]
+
+// Actual MetroMovers Saloon photographs
+const saloonPhotos = [
+  { src: '/saloon-car.jpg', alt: 'MetroMovers Saloon' },
+  { src: '/saloon-second.jpg', alt: 'Saloon second view' },
+]
+
 function CarHire() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState('')
   const [travelScope, setTravelScope] = useState('within_lagos')
   const [bookingFor, setBookingFor] = useState('myself')
+  const [journeyArrangement, setJourneyArrangement] = useState('')
+  const [selectedVehicle, setSelectedVehicle] = useState('')
 
   const today = new Date()
   const minimumDate = new Date(
@@ -35,10 +63,7 @@ function CarHire() {
       number_of_days: Number(data.get('number_of_days')),
 
       travel_scope: data.get('travel_scope'),
-      service_area:
-        data.get('travel_scope') === 'within_lagos'
-          ? data.get('service_area')
-          : null,
+      service_area: data.get('service_area') || null,
 
       booking_for: data.get('booking_for'),
       journey_arrangement: data.get('journey_arrangement'),
@@ -87,14 +112,16 @@ function CarHire() {
 
       setMessage(
         hireBooking.travel_scope === 'outside_lagos'
-          ? 'Your outside-Lagos request has been submitted for special review. Our team will contact you.'
-          : 'Your car-hire request has been submitted successfully. Our team will contact you.'
+          ? 'Your interstate request has been submitted for review. Our team will contact you.'
+          : 'Your MetroMovers car-hire request has been submitted successfully. Our team will contact you.'
       )
 
       setMessageType('success')
       form.reset()
       setTravelScope('within_lagos')
       setBookingFor('myself')
+      setJourneyArrangement('')
+      setSelectedVehicle('')
     } catch (error) {
       console.error('Car hire booking error:', error)
 
@@ -110,6 +137,15 @@ function CarHire() {
     }
   }
 
+  function selectVehicle(vehicle) {
+    setSelectedVehicle(vehicle)
+
+    document.getElementById('vehicle_type')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    })
+  }
+
   return (
     <div className="app">
       <Navbar />
@@ -118,15 +154,69 @@ function CarHire() {
         <section className="booking-section">
           <div className="section-heading">
             <p className="eyebrow">PREMIUM CHAUFFEUR SERVICE</p>
-            <h2>Hire a Car with a Driver</h2>
+            <h2>MetroMovers Car Hire</h2>
             <p>
-              Book a dedicated vehicle and professional driver
-              for the number of days you need.
+              Choose your vehicle and arrange comfortable travel
+              with a professional driver.
             </p>
           </div>
 
+          {/* VEHICLE GALLERY */}
+          <div className="metro-vehicle-gallery">
+            <h3>Choose Your MetroMovers Vehicle</h3>
+            <p>Explore our available vehicle categories.</p>
+
+            <div className="metro-vehicle-grid">
+              <article className="metro-vehicle-card">
+                <h4>Premium SUV – Toyota Prado</h4>
+
+                <div className="metro-photo-grid">
+                  {suvPhotos.map((photo) => (
+                    <img
+                      key={photo.src}
+                      src={photo.src}
+                      alt={photo.alt}
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={() => selectVehicle('SUV')}
+                >
+                  Select SUV
+                </button>
+              </article>
+
+              <article className="metro-vehicle-card">
+                <h4>Premium Saloon</h4>
+
+                <div className="metro-photo-grid">
+                  {saloonPhotos.map((photo) => (
+                    <img
+                      key={photo.src}
+                      src={photo.src}
+                      alt={photo.alt}
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={() => selectVehicle('Saloon')}
+                >
+                  Select Saloon
+                </button>
+              </article>
+            </div>
+          </div>
+
           <form className="booking-form" onSubmit={handleSubmit}>
-            <h3>Customer Information</h3>
+            <h3>1. Customer Information</h3>
 
             <label>
               Full name
@@ -134,6 +224,7 @@ function CarHire() {
                 name="customer_name"
                 type="text"
                 placeholder="Your full name"
+                autoComplete="name"
                 required
               />
             </label>
@@ -144,6 +235,7 @@ function CarHire() {
                 name="customer_email"
                 type="email"
                 placeholder="Your email address"
+                autoComplete="email"
                 required
               />
             </label>
@@ -154,22 +246,66 @@ function CarHire() {
                 name="customer_phone"
                 type="tel"
                 placeholder="Your phone number"
+                autoComplete="tel"
                 required
               />
             </label>
 
-            <h3>Vehicle Selection</h3>
+            <h3>2. Choose Your Vehicle</h3>
 
             <label>
-              Choose your vehicle
-              <select name="vehicle_type" required defaultValue="">
-                <option value="" disabled>Select vehicle type</option>
+              Vehicle category
+              <select
+                id="vehicle_type"
+                name="vehicle_type"
+                required
+                value={selectedVehicle}
+                onChange={(event) =>
+                  setSelectedVehicle(event.target.value)
+                }
+              >
+                <option value="">Select vehicle</option>
                 <option value="SUV">SUV</option>
-                <option value="Saloon">Saloon car</option>
+                <option value="Saloon">Saloon</option>
               </select>
             </label>
 
-            <h3>Booking Duration</h3>
+            <h3>3. Choose Your Journey</h3>
+
+            <label>
+              Journey arrangement
+              <select
+                name="journey_arrangement"
+                value={journeyArrangement}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setJourneyArrangement(value)
+
+                  if (value === 'interstate') {
+                    setTravelScope('outside_lagos')
+                  } else if (value) {
+                    setTravelScope('within_lagos')
+                  }
+                }}
+                required
+              >
+                <option value="">Select journey type</option>
+                <option value="airport_pickup">Airport pickup</option>
+                <option value="airport_dropoff">Airport drop-off</option>
+                <option value="full_day">Full-day hire (24 hours)</option>
+                <option value="interstate">Interstate travel</option>
+              </select>
+            </label>
+
+            <div className="booking-note">
+              <strong>Full-day hire</strong>
+              <p>
+                One full day is 24 hours. Select the number of days
+                you need the vehicle and driver.
+              </p>
+            </div>
+
+            <h3>4. Booking Duration</h3>
 
             <label>
               Booking start date
@@ -188,12 +324,18 @@ function CarHire() {
                 name="number_of_days"
                 min="1"
                 max="90"
-                placeholder="e.g. 3"
+                placeholder="e.g. 1"
                 required
               />
             </label>
 
-            <h3>Travel Location</h3>
+            <p className="booking-note">
+              For full-day hire, each selected day represents
+              24 hours of service. Airport and interstate requests
+              will be reviewed by our team before confirmation.
+            </p>
+
+            <h3>5. Travel Location</h3>
 
             <label>
               Where will you be travelling?
@@ -210,7 +352,7 @@ function CarHire() {
 
             {travelScope === 'within_lagos' && (
               <label>
-                Lagos location
+                Lagos service area
                 <select name="service_area" required defaultValue="">
                   <option value="" disabled>Select area</option>
                   <option value="lagos_island">Lagos Island</option>
@@ -220,20 +362,38 @@ function CarHire() {
             )}
 
             {travelScope === 'outside_lagos' && (
-              <div className="booking-note">
-                <strong>Special travel request</strong>
-                <p>
-                  You can submit your request. Our team will
-                  review the journey, vehicle availability and
-                  pricing before confirming your booking.
-                </p>
-              </div>
+              <>
+                <label>
+                  Destination state
+                  <select name="service_area" required defaultValue="">
+                    <option value="" disabled>
+                      Select destination state
+                    </option>
+                    {nigerianStates
+                      .filter((state) => state !== 'Lagos')
+                      .map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+
+                <div className="booking-note">
+                  <strong>Interstate booking review</strong>
+                  <p>
+                    Our team will review your destination, vehicle
+                    availability and journey details before confirming
+                    the final price.
+                  </p>
+                </div>
+              </>
             )}
 
-            <h3>Who is this booking for?</h3>
+            <h3>6. Passenger Information</h3>
 
             <label>
-              Booking for
+              Who is this booking for?
               <select
                 name="booking_for"
                 value={bookingFor}
@@ -269,23 +429,7 @@ function CarHire() {
               </>
             )}
 
-            <h3>Journey Arrangements</h3>
-
-            <label>
-              What do you need?
-              <select
-                name="journey_arrangement"
-                required
-                defaultValue=""
-              >
-                <option value="" disabled>Select arrangement</option>
-                <option value="pickup">Pickup</option>
-                <option value="dropoff">Drop-off</option>
-                <option value="pickup_and_dropoff">
-                  Pickup and drop-off
-                </option>
-              </select>
-            </label>
+            <h3>7. Journey Details</h3>
 
             <label>
               Pickup address
@@ -302,7 +446,7 @@ function CarHire() {
               <input
                 name="destination"
                 type="text"
-                placeholder="Enter destination or drop-off address"
+                placeholder="Enter destination address"
                 required
               />
             </label>
@@ -312,7 +456,7 @@ function CarHire() {
               <textarea
                 name="trip_details"
                 rows="4"
-                placeholder="Tell us about your journey, extra stops or special arrangements..."
+                placeholder="Airport flight details, extra stops or other arrangements..."
               />
             </label>
 
@@ -340,10 +484,8 @@ function CarHire() {
           )}
 
           <p className="booking-note">
-            Your request is subject to vehicle and driver availability.
-            The same driver and vehicle will be assigned for your
-            agreed hire period. Final pricing will be confirmed by
-            Fheety Mobile.
+            All requests are subject to vehicle and driver availability.
+            Final pricing and arrangements will be confirmed by MetroMovers.
           </p>
         </section>
       </main>

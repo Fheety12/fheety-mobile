@@ -1,6 +1,6 @@
 
 /* ========================================
-   FHEETy MOBILE — PREMIUM NAVIGATION
+   METROMOVERS — PREMIUM NAVIGATION
 ======================================== */
 
 .site-navbar {
@@ -155,6 +155,7 @@
 }
 
 /* Tablet and mobile navigation */
+
 @media (max-width: 850px) {
   .site-navbar {
     width: calc(100% - 24px);
@@ -239,6 +240,8 @@
   }
 }
 
+/* Customer bookings and notification badge */
+
 .nav-bookings-link {
   display: inline-flex;
   align-items: center;
@@ -249,12 +252,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
+
   border-radius: 50px;
   background: #e53935;
   color: #ffffff;
+
   font-size: 11px;
   font-weight: 700;
   line-height: 1;

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import CarHireAdmin from './CarHireAdmin.jsx'
@@ -6,7 +7,7 @@ import './Admin.css'
 
 function getBookingReference(booking) {
   if (!booking.id) return 'Reference unavailable'
-  return `FH-${String(booking.id).slice(0, 8).toUpperCase()}`
+  return `MM-${String(booking.id).slice(0, 8).toUpperCase()}`
 }
 
 function formatSubmittedDate(date) {
@@ -33,6 +34,18 @@ function statusColor(status) {
   return colors[(status || 'pending').toLowerCase()] || '#cbd5e1'
 }
 
+function formatFare(value) {
+  if (value === null || value === undefined || value === '') {
+    return 'Not set'
+  }
+
+  const amount = Number(value)
+
+  if (!Number.isFinite(amount)) return 'Not set'
+
+  return `₦${amount.toLocaleString('en-NG')}`
+}
+
 export default function Admin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -44,6 +57,7 @@ export default function Admin() {
   const [bookingsLoading, setBookingsLoading] = useState(false)
   const [bookingsError, setBookingsError] = useState('')
   const [updatingId, setUpdatingId] = useState(null)
+  const [savingFareId, setSavingFareId] = useState(null)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -293,6 +307,54 @@ export default function Admin() {
     setUpdatingId(null)
   }
 
+  async function updateBookingFare(booking, field, rawValue) {
+    if (!['estimated_fare', 'final_fare'].includes(field)) {
+      setBookingsError('Invalid fare field.')
+      return
+    }
+
+    const trimmedValue = String(rawValue).trim()
+    const value = trimmedValue === '' ? null : Number(trimmedValue)
+
+    if (
+      value !== null &&
+      (!Number.isFinite(value) || value < 0)
+    ) {
+      setBookingsError('Please enter a valid fare amount.')
+      return
+    }
+
+    setSavingFareId(booking.id)
+    setBookingsError('')
+    setMessage('')
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({ [field]: value })
+      .eq('id', booking.id)
+      .select()
+
+    if (error) {
+      setBookingsError('Could not save fare: ' + error.message)
+    } else if (!data || data.length === 0) {
+      setBookingsError(
+        'Fare was not saved. Check the admin permissions.'
+      )
+    } else {
+      setBookings((current) =>
+        current.map((item) =>
+          item.id === booking.id
+            ? { ...item, [field]: value }
+            : item
+        )
+      )
+
+      setMessage('Fare saved successfully.')
+    }
+
+    setSavingFareId(null)
+  }
+
   async function handleSignOut() {
     const { error } = await supabase.auth.signOut()
 
@@ -351,8 +413,8 @@ export default function Admin() {
     return (
       <main className="admin-login-page">
         <form className="admin-login-card" onSubmit={handleLogin}>
-          <div className="admin-logo">F</div>
-          <p className="admin-brand">FHEETYMOBILE</p>
+          <div className="admin-logo">M</div>
+          <p className="admin-brand">METROMOVERS</p>
           <h1>Admin sign in</h1>
 
           <p className="admin-login-description">
@@ -421,9 +483,9 @@ export default function Admin() {
       <div className="admin-container">
         <header className="admin-header">
           <div className="admin-header-brand">
-            <div className="admin-header-logo">F</div>
+            <div className="admin-header-logo">M</div>
             <div>
-              <h2 className="admin-header-title">Fheety Mobile</h2>
+              <h2 className="admin-header-title">MetroMovers</h2>
               <p className="admin-header-subtitle">ADMINISTRATION PORTAL</p>
             </div>
           </div>
@@ -636,7 +698,7 @@ export default function Admin() {
           <div className="admin-bookings-header">
             <div>
               <h2>Ride bookings</h2>
-              <p>Review customer requests and manage booking statuses.</p>
+              <p>Review customer requests, set fares and manage bookings.</p>
             </div>
 
             <button
@@ -784,6 +846,71 @@ export default function Admin() {
                     </div>
                   </div>
 
+                  {/* NORMAL RIDE FARE MANAGEMENT */}
+                  <div className="admin-status-control">
+                    <p className="admin-section-label">FARE MANAGEMENT</p>
+
+                    <p className="admin-date-value">
+                      Current estimated fare: {formatFare(booking.estimated_fare)}
+                    </p>
+
+                    <label
+                      className="admin-label"
+                      htmlFor={`estimated-fare-${booking.id}`}
+                    >
+                      Estimated fare (₦)
+                    </label>
+
+                    <input
+                      className="admin-input"
+                      id={`estimated-fare-${booking.id}`}
+                      type="number"
+                      min="0"
+                      step="1"
+                      defaultValue={booking.estimated_fare ?? ''}
+                      placeholder="Enter estimated fare"
+                      onBlur={(event) =>
+                        updateBookingFare(
+                          booking,
+                          'estimated_fare',
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <p className="admin-date-value">
+                      Current final fare: {formatFare(booking.final_fare)}
+                    </p>
+
+                    <label
+                      className="admin-label"
+                      htmlFor={`final-fare-${booking.id}`}
+                    >
+                      Final fare (₦)
+                    </label>
+
+                    <input
+                      className="admin-input"
+                      id={`final-fare-${booking.id}`}
+                      type="number"
+                      min="0"
+                      step="1"
+                      defaultValue={booking.final_fare ?? ''}
+                      placeholder="Enter final fare"
+                      onBlur={(event) =>
+                        updateBookingFare(
+                          booking,
+                          'final_fare',
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    {savingFareId === booking.id && (
+                      <p className="admin-status-saving">Saving fare...</p>
+                    )}
+                  </div>
+
                   <div className="admin-status-control">
                     <label
                       className="admin-label"
@@ -869,13 +996,13 @@ export default function Admin() {
         </section>
 
         {/* VEHICLE MANAGEMENT */}
-<VehicleAdmin />
+        <VehicleAdmin />
 
-{/* CAR HIRE MANAGEMENT */}
-<CarHireAdmin />
+        {/* CAR HIRE MANAGEMENT */}
+        <CarHireAdmin />
 
         <footer className="admin-footer">
-          Fheety Mobile · Admin Dashboard
+          MetroMovers · Admin Dashboard
         </footer>
       </div>
     </main>
